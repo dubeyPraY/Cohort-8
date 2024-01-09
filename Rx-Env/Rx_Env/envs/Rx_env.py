@@ -135,7 +135,7 @@ class RxEnv(gym.Env):
 
         """
 
-        self.start_state = random_statevector(2**2)
+        self.start_state = random_statevector(2)
         self.target_state = X_op*self.start_state
 
         fid = state_fidelity(self.current_state, self.target_state, validate=True)
