@@ -46,7 +46,7 @@ class RxEnv(gym.Env):
             }
         )
 
-        self.action_space = spaces.Box(0.0,  2.0, shape=(2,), dtype=np.float32)
+        self.action_space = spaces.Box(0.0,  2.0, shape=(), dtype=np.float32)
 
         # self.action_space= spaces.Dict(
         #     {
