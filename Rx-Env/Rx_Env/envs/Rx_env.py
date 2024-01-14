@@ -41,8 +41,8 @@ class RxEnv(gym.Env):
         
         self.observation_space = spaces.Dict(
             {
-                "agent": spaces.Box(0.0,  1.0, shape=(2,), dtype=float),
-                "target": spaces.Box(0.0,  1.0, shape=(2,), dtype=float),
+                "agent": spaces.Box(-1.0,  1.0, shape=(3,), dtype=float),
+                "target": spaces.Box(-1.0,  1.0, shape=(3,), dtype=float),
             }
         )
 
@@ -141,11 +141,6 @@ class RxEnv(gym.Env):
         fid = state_fidelity(self.current_state, self.target_state, validate=True)
         return self._get_obs(), {'fidelity':fid}#returning initial state and auxilarry information
     
-
-    def _get_obs(self):
-        return {"agent": self.current_state , "target": self.target_state}
-
-    
     def render(self):
         """
         Return:
@@ -153,6 +148,20 @@ class RxEnv(gym.Env):
 
         """
         return self.show
+    
+    def toBloch(matrix):#converting density matrix to bloch vector
+        [[a, b], [c, d]] = matrix
+        x = complex(c + b).real
+        y = complex(c - b).imag
+        z = complex(d - a).real
+        return np.array(x, y, z)
+    
+    def _get_obs(self):#returning the observation
+        density_matrix_start = DensityMatrix(self.start_state)
+        density_matrix_target = DensityMatrix(self.target_state)
+        
+        return {"agent": toBloch(np.array(density_matrix_start)), "target": toBloch(np.array(density_matrix_start))}
+
 
     
     # def sample(self):
