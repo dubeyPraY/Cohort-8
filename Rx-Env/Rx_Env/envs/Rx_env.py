@@ -13,7 +13,7 @@ from qiskit_dynamics import Solver
 # Configure to use JAX internally
 import jax
 jax.config.update("jax_enable_x64", True)
-jax.config.update("jax_platform_name", "cpu")
+#jax.config.update("jax_platform_name", "cpu")
 from qiskit_dynamics.array import Array
 from gym.spaces import Box
 from gym import spaces
@@ -119,7 +119,8 @@ class RxEnv(gym.Env):
         fid = state_fidelity(self.current_state, self.target_state, validate=True)
         
         observation=self._get_obs()
-        reward = 0
+        reward = fid
+        print(fid)
         done = False
         if fid==1:
             reward = 1
