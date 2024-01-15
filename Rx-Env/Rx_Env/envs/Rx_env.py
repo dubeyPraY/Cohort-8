@@ -41,12 +41,12 @@ class RxEnv(gym.Env):
         
         self.observation_space = spaces.Dict(
             {
-                "agent": spaces.Box(-1.0,  1.0, shape=(3,), dtype=float),
-                "target": spaces.Box(-1.0,  1.0, shape=(3,), dtype=float),
+                "agent": spaces.Box(-1.0,  1.0, shape=(3,), dtype=np.float32),
+                "target": spaces.Box(-1.0,  1.0, shape=(3,), dtype=np.float32),
             }
         )
 
-        self.action_space = spaces.Box(0.0,  1.0, shape=(), dtype=np.float32)
+        self.action_space = spaces.Box(-1.0,  1.0, shape=(), dtype=np.float32)
 
         # self.action_space= spaces.Dict(
         #     {
@@ -117,6 +117,7 @@ class RxEnv(gym.Env):
         
         # compute fidelity
         fid = state_fidelity(self.current_state, self.target_state, validate=True)
+        
         observation=self._get_obs()
         reward = 0
         done = False
