@@ -153,11 +153,11 @@ class RxEnv(gym.Env):
         [[a, b], [c, d]] = matrix
         x = complex(c + b).real
         y = complex(c - b).imag
-        z = complex(d - a).real
+        z = complex(a - d).real
         return np.array(x, y, z)
     
     def _get_obs(self):#returning the observation
-        density_matrix_start = DensityMatrix(self.start_state)
+        density_matrix_start = DensityMatrix(self.current_state)
         density_matrix_target = DensityMatrix(self.target_state)
         
         return {"agent": toBloch(np.array(density_matrix_start)), "target": toBloch(np.array(density_matrix_start))}
