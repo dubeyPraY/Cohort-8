@@ -9,7 +9,7 @@ from qiskit.quantum_info.operators import Operator
 from qiskit_dynamics import Solver
 
 
-from qutip import fidelity
+#from qutip import fidelity
 # Configure to use JAX internally
 import jax
 jax.config.update("jax_enable_x64", True)
@@ -22,7 +22,7 @@ from matplotlib import pyplot as plt
 from qiskit_dynamics.pulse import InstructionToSignals
 
 
-X_op = Array(Operator.from_label('X'))
+X_op = Operator.from_label('X')
     
 
 # Custom Gym environment for Rx(π/2) gate optimization
@@ -126,7 +126,7 @@ class RxEnv(gym.Env):
         return observation, reward, done, {'fidelity': round(fid, 3)}
         
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
         """
         Resets relevant variables to their initial state
 
@@ -136,7 +136,8 @@ class RxEnv(gym.Env):
         """
 
         self.start_state = random_statevector(2)
-        self.target_state = X_op*self.start_state
+        self.target_state = self.start_state.evolve(X_op)
+        self.current_state = self.start_state
 
         fid = state_fidelity(self.current_state, self.target_state, validate=True)
         return self._get_obs(), {'fidelity':fid}#returning initial state and auxilarry information
@@ -149,20 +150,20 @@ class RxEnv(gym.Env):
         """
         return self.show
     
-    def toBloch(matrix):#converting density matrix to bloch vector
-        [[a, b], [c, d]] = matrix
-        x = complex(c + b).real
-        y = complex(c - b).imag
-        z = complex(a - d).real
-        return np.array(x, y, z)
     
     def _get_obs(self):#returning the observation
         density_matrix_start = DensityMatrix(self.current_state)
         density_matrix_target = DensityMatrix(self.target_state)
         
-        return {"agent": toBloch(np.array(density_matrix_start)), "target": toBloch(np.array(density_matrix_start))}
+        return {"agent": self.toBloch(np.array(density_matrix_start)), "target": self.toBloch(np.array(density_matrix_start))}
 
-
+    def toBloch(self,matrix):#converting density matrix to bloch vector
+        [[a, b], [c, d]] = matrix
+        x = complex(c + b).real
+        y = complex(c - b).imag
+        z = complex(a - d).real
+        return np.array([x, y, z])
+    
     
     # def sample(self):
     #     """
