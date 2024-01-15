@@ -46,7 +46,7 @@ class RxEnv(gym.Env):
             }
         )
 
-        self.action_space = spaces.Box(0.0,  2.0, shape=(), dtype=np.float32)
+        self.action_space = spaces.Box(0.0,  1.0, shape=(), dtype=np.float32)
 
         # self.action_space= spaces.Dict(
         #     {
@@ -114,9 +114,9 @@ class RxEnv(gym.Env):
 
         sol = hamiltonian_solver.solve(t_span=[0., 2*T], y0=y0, signals=sxp, atol=1e-8, rtol=1e-8)
         self.current_state = sol.y[-1]  
+        
         # compute fidelity
         fid = state_fidelity(self.current_state, self.target_state, validate=True)
-        
         observation=self._get_obs()
         reward = 0
         done = False
@@ -124,7 +124,7 @@ class RxEnv(gym.Env):
             reward = 1
             done = True
 
-        return observation, reward, done, {'fidelity': round(fid, 3)}
+        return observation, reward, done, False, {'fidelity': round(fid, 3)}
         
 
     def reset(self, seed=None, options=None):
