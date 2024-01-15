@@ -118,7 +118,8 @@ class RxEnv(gym.Env):
         fid = state_fidelity(self.current_state, self.target_state, validate=True)
         
         observation=self._get_obs()
-
+        reward = 0
+        done = False
         if fid==1:
             reward = 1
             done = True
