@@ -112,20 +112,34 @@ class RxEnv(gym.Env):
         # Start the qubit in its ground state.
         y0 = self.start_state
 
-        sol = hamiltonian_solver.solve(t_span=[0., 2*T], y0=y0, signals=sxp, atol=1e-8, rtol=1e-8)
+        sol = hamiltonian_solver.solve(t_span=[0., 2*T], y0=y0, signals=sxp)#, atol=1e-8)#, rtol=1e-8)
         self.current_state = sol.y[-1]  
         
         # compute fidelity
-        fid = state_fidelity(self.current_state, self.target_state, validate=True)
-        
+        #fid = state_fidelity(self.current_state, self.target_state, validate=True)
+        try:
+            fid = state_fidelity(self.current_state, self.target_state)#, validate=True)
+            
+        except:
+            fid=-1
+
+        reward = fid-1
         observation=self._get_obs()
-        reward = fid
-        print('fid= ',fid)
         done = False
+
         if fid==1:
-            reward = 1
+            reward = 150
             done = True
 
+        elif fid>0.999:
+            if 1/(100*(1-fid))<100:
+                reward= 1/(100*(1-fid))
+            else: reward=100+fid*10
+            done = True
+        #print('fid= ',fid, "reward= ", reward)
+        
+        observation=self._get_obs()
+        
         return observation, reward, done, False, {'fidelity': round(fid, 3)}
         
 
