@@ -118,7 +118,7 @@ class RxEnv(gym.Env):
         # compute fidelity
         #fid = state_fidelity(self.current_state, self.target_state, validate=True)
         try:
-            fid = state_fidelity(self.current_state, self.target_state)#, validate=True)
+            fid = state_fidelity(self.current_state, self.target_state, validate=False)
             
         except:
             fid=-1
