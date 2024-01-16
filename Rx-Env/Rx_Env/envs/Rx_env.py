@@ -120,7 +120,7 @@ class RxEnv(gym.Env):
         
         observation=self._get_obs()
         reward = fid
-        print(fid)
+        print('fid= ',fid)
         done = False
         if fid==1:
             reward = 1
@@ -138,7 +138,7 @@ class RxEnv(gym.Env):
 
         """
 
-        self.start_state = random_statevector(2)
+        self.start_state = random_statevector(2,seed)
         self.target_state = self.start_state.evolve(X_op)
         self.current_state = self.start_state
 
