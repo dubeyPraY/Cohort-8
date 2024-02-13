@@ -20,7 +20,7 @@ from gym import spaces
 Array.set_default_backend("jax")
 from matplotlib import pyplot as plt
 from qiskit_dynamics.pulse import InstructionToSignals
-
+from math import exp
 
 X_op = Operator.from_label('X')
     
@@ -37,12 +37,14 @@ class RxEnv(gym.Env):
         self.start=0
         self.end=7
         self.step_size=0.01
+        self.seg=0
         
         
         self.observation_space = spaces.Dict(
             {
-                "agent": spaces.Box(-1.0,  1.0, shape=(3,), dtype=np.float32),
+                "start": spaces.Box(-1.0,  1.0, shape=(3,), dtype=np.float32),
                 "target": spaces.Box(-1.0,  1.0, shape=(3,), dtype=np.float32),
+                "current": spaces.Box(-1.0,  1.0, shape=(3,), dtype=np.float32)
             }
         )
 
@@ -111,7 +113,7 @@ class RxEnv(gym.Env):
         
         # Start the qubit in its ground state.
         y0 = self.start_state
-
+        
         sol = hamiltonian_solver.solve(t_span=[0., 2*T], y0=y0, signals=sxp)#, atol=1e-8)#, rtol=1e-8)
         self.current_state = sol.y[-1]  
         
@@ -123,24 +125,30 @@ class RxEnv(gym.Env):
         except:
             fid=-1
 
-        reward = fid-1
+        reward = fid
         observation=self._get_obs()
         done = False
 
         if fid==1:
-            reward = 150
-            done = True
+            reward = 100
+            #done = True
 
         elif fid>0.999:
-            if 1/(100*(1-fid))<100:
-                reward= 1/(100*(1-fid))
-            else: reward=100+fid*10
-            done = True
-        #print('fid= ',fid, "reward= ", reward)
+            reward=10*exp(fid)
+            #done = True
+        
+        self.seg+=1
+        truncated=False
+        if self.seg>20:
+            truncated=True
+        
+        if done or truncated:
+            print('fid= ',fid, "reward= ", reward)
+            #print('fid= ',fid, "reward= ", reward)
         
         observation=self._get_obs()
         
-        return observation, reward, done, False, {'fidelity': round(fid, 3)}
+        return observation, reward, done, truncated, {'fidelity': round(fid, 3)}
         
 
     def reset(self, seed=None, options=None):
@@ -155,6 +163,7 @@ class RxEnv(gym.Env):
         self.start_state = random_statevector(2,seed)
         self.target_state = self.start_state.evolve(X_op)
         self.current_state = self.start_state
+        self.seg=0
 
         fid = state_fidelity(self.current_state, self.target_state, validate=True)
         return self._get_obs(), {'fidelity':fid}#returning initial state and auxilarry information
@@ -169,10 +178,11 @@ class RxEnv(gym.Env):
     
     
     def _get_obs(self):#returning the observation
-        density_matrix_start = DensityMatrix(self.current_state)
+        density_matrix_start = DensityMatrix(self.start_state)
         density_matrix_target = DensityMatrix(self.target_state)
+        density_matrix_current = DensityMatrix(self.current_state)
         
-        return {"agent": self.toBloch(np.array(density_matrix_start)), "target": self.toBloch(np.array(density_matrix_start))}
+        return {"start": self.toBloch(np.array(density_matrix_start)), "target": self.toBloch(np.array(density_matrix_target)),"current": self.toBloch(np.array(density_matrix_current))}
 
     def toBloch(self,matrix):#converting density matrix to bloch vector
         [[a, b], [c, d]] = matrix
