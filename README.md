@@ -1,4 +1,4 @@
-# Pulse Optimisation Gymnasium Enviornment 
+# Pulse Optimisation Using Gymnasium Enviornment 
 I created this enviorment for the public to easily able to implement any Reinforcement Learning algorithm for Optimisation of Qubit pulses. My main motivation for this work is this paper https://arxiv.org/pdf/2105.01079.pdf. This enviorment hopes to provide an easy playground for creating policy networks for the Qubit Pulses without worrying about the Physics involved. 
 
 ## Install
