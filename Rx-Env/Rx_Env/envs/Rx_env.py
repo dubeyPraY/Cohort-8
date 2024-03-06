@@ -1,30 +1,25 @@
+#This is a custum gym environment for the optimization of Rx(π/2) gate
+
 import gymnasium as gym
 import numpy as np
-from qiskit_dynamics import Solver, DynamicsBackend
-#from qiskit.providers.aer import QasmSimulator
+from qiskit_dynamics import Solver
 from qiskit.quantum_info import Operator
 from qiskit import pulse
-from qiskit.quantum_info import state_fidelity, random_statevector,Statevector, DensityMatrix
+from qiskit.quantum_info import state_fidelity, random_statevector, DensityMatrix
 from qiskit.quantum_info.operators import Operator
 from qiskit_dynamics import Solver
-
-
-#from qutip import fidelity
-# Configure to use JAX internally
-import jax
-jax.config.update("jax_enable_x64", True)
-#jax.config.update("jax_platform_name", "cpu")
-from qiskit_dynamics.array import Array
-from gym.spaces import Box
 from gym import spaces
-Array.set_default_backend("jax")
-from matplotlib import pyplot as plt
+from qiskit_dynamics.array import Array
 from qiskit_dynamics.pulse import InstructionToSignals
 from math import exp
 
+#setting up jax
+import jax
+jax.config.update("jax_enable_x64", True)
+Array.set_default_backend("jax")
+
 X_op = Operator.from_label('X')
     
-
 # Custom Gym environment for Rx(π/2) gate optimization
 class RxEnv(gym.Env):
     def __init__(self, backend=None,):
@@ -32,7 +27,6 @@ class RxEnv(gym.Env):
         self.backend = backend
         self.simulator = None
         self.action_space = 2
-        # self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(1,))
         self.state = 0
         self.start=0
         self.end=7
@@ -50,22 +44,25 @@ class RxEnv(gym.Env):
 
         self.action_space = spaces.Box(-1.0,  1.0, shape=(), dtype=np.float32)
 
-        # self.action_space= spaces.Dict(
-        #     {
-        #         "real_amplitude": Box(low=0.0, high=6.0, shape=(), dtype=np.float32),
-                
-        #         "img_amplitude": Box(low=0.0, high=6.0, shape=(), dtype=np.float32),
-            
-        #         "phase": Box(low=0.0, high=6.0, shape=(), dtype=np.float32),
-            
-        #     }
-        # )
-
-
         self.start_state = np.array([1, 0])
         self.target_state =np.array([0, 1])
         
     def step(self, action):
+        """
+        Perform a step in the environment.
+
+        Args:
+            action: The action to take in the environment.
+
+        Returns:
+            observation: The current observation of the environment.
+            reward: The reward obtained from the environment.
+            done: A boolean indicating whether the episode is done.
+            truncated: A boolean indicating whether the episode was truncated.
+            info: Additional information about the step.
+
+        """
+
         # Strength of the Rabi-rate in GHz.
         r = 0.1
 
@@ -114,29 +111,25 @@ class RxEnv(gym.Env):
         # Start the qubit in its ground state.
         y0 = self.start_state
         
-        sol = hamiltonian_solver.solve(t_span=[0., 2*T], y0=y0, signals=sxp)#, atol=1e-8)#, rtol=1e-8)
+        sol = hamiltonian_solver.solve(t_span=[0., 2*T], y0=y0, signals=sxp)
         self.current_state = sol.y[-1]  
         
         # compute fidelity
-        #fid = state_fidelity(self.current_state, self.target_state, validate=True)
         try:
             fid = state_fidelity(self.current_state, self.target_state, validate=False)
             
         except:
             fid=-1
-
         reward = fid
         observation=self._get_obs()
         done = False
 
         if fid==1:
             reward = 100
-            #done = True
-
+            
         elif fid>0.999:
             reward=10*exp(fid)
-            #done = True
-        
+            
         self.seg+=1
         truncated=False
         if self.seg>20:
@@ -144,8 +137,7 @@ class RxEnv(gym.Env):
         
         if done or truncated:
             print('fid= ',fid, "reward= ", reward)
-            #print('fid= ',fid, "reward= ", reward)
-        
+            
         observation=self._get_obs()
         
         return observation, reward, done, truncated, {'fidelity': round(fid, 3)}
@@ -155,21 +147,37 @@ class RxEnv(gym.Env):
         """
         Resets relevant variables to their initial state
 
-        Return:
-            touple: initial state and auxilarry information
-
+        Args:
+            seed (int): Seed value for random number generation (default: None)
+            options (dict): Additional options for resetting (default: None)
+            
+        Returns:
+            tuple: Initial state and auxiliary information
+            
         """
-
-        self.start_state = random_statevector(2,seed)
+        
+        # Set the start state to a random statevector
+        self.start_state = random_statevector(2, seed)
+        
+        # Evolve the start state using the X_op operator to get the target state
         self.target_state = self.start_state.evolve(X_op)
+        
+        # Set the current state to the start state
         self.current_state = self.start_state
-        self.seg=0
-
+        
+        # Reset the segment counter
+        self.seg = 0
+        
+        # Calculate the fidelity between the current state and the target state
         fid = state_fidelity(self.current_state, self.target_state, validate=True)
-        return self._get_obs(), {'fidelity':fid}#returning initial state and auxilarry information
+        
+        # Return the initial state and auxiliary information
+        return self._get_obs(), {'fidelity': fid}
     
     def render(self):
         """
+            Have to meaningfully define this function to show pulses
+        
         Return:
             text drawing of the current circuit represented by the QuantumCircuit object
 
@@ -177,31 +185,46 @@ class RxEnv(gym.Env):
         return self.show
     
     
-    def _get_obs(self):#returning the observation
+    def _get_obs(self):
+        """
+        Get the observation for the current state.
+
+        Returns:
+            dict: A dictionary containing the observations for the start, target, and current states.
+        """
+
+        # Create DensityMatrix objects for the start, target, and current states
         density_matrix_start = DensityMatrix(self.start_state)
         density_matrix_target = DensityMatrix(self.target_state)
         density_matrix_current = DensityMatrix(self.current_state)
         
-        return {"start": self.toBloch(np.array(density_matrix_start)), "target": self.toBloch(np.array(density_matrix_target)),"current": self.toBloch(np.array(density_matrix_current))}
+        # Convert the density matrices to Bloch vectors using the toBloch method
+        start_observation = self.toBloch(np.array(density_matrix_start))
+        target_observation = self.toBloch(np.array(density_matrix_target))
+        current_observation = self.toBloch(np.array(density_matrix_current))
+        
+        # Return a dictionary containing the observations for the start, target, and current states
+        return {"start": start_observation, "target": target_observation, "current": current_observation}
 
-    def toBloch(self,matrix):#converting density matrix to bloch vector
+    def toBloch(self, matrix):
+        """
+        Converts a density matrix to a Bloch vector.
+
+        Parameters:
+        matrix (list of lists): The density matrix to be converted.
+
+        Returns:
+        numpy.ndarray: The Bloch vector representation of the density matrix.
+        """
+
+        # Extract the elements of the matrix
         [[a, b], [c, d]] = matrix
+
+        # Calculate the Bloch vector components
         x = complex(c + b).real
         y = complex(c - b).imag
         z = complex(a - d).real
+
+        # Return the Bloch vector as a numpy array
         return np.array([x, y, z])
-    
-    
-    # def sample(self):
-    #     """
-    #     Return:
-    #         action (dictionary): a specific action in the environment action space
-
-    #     """
-    #     action = {}
-    #     action['amp']=np.random.choice(self.create_amplitudes())+np.random.choice(self.create_amplitudes())*1j
-    #     action['phase']=np.random.choice(self.create_phase())
-    #     return action
-
-
-    
+        

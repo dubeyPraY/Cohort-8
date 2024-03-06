@@ -1,9 +1,0 @@
-setup.py
-Rx_Env/__init__.py
-Rx_Env.egg-info/PKG-INFO
-Rx_Env.egg-info/SOURCES.txt
-Rx_Env.egg-info/dependency_links.txt
-Rx_Env.egg-info/requires.txt
-Rx_Env.egg-info/top_level.txt
-Rx_Env/envs/Rx_env.py
-Rx_Env/envs/__init__.py
