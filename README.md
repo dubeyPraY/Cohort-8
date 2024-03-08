@@ -5,7 +5,6 @@ I created this enviorment for the public to easily able to implement any Reinfor
 
 Do one of the following in the source directory (preferably in a Python virtual environment set up for Qiskit Dynamics)
 
-* `make # gnu make, we have provided a Makefile`
 * `./setup.py install`
 * `pip3 install .`
 
